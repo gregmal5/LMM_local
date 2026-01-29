@@ -1,0 +1,38 @@
+# Przewodnik Administratora (Admin Guide) - Bielik LLM
+
+## 1. Lokalizacja elementów systemu
+
+### Elementy LLM (Large Language Model)
+- **Repozytorium i pliki źródłowe:** `d:\agent\zadanie1\`
+- **Główny skrypt aplikacji:** `d:\agent\zadanie1\app.py`
+- **Plik modelu (GGUF):** `d:\agent\zadanie1\Bielik-11B-v2.3-Instruct.Q4_K_M.gguf` (powinien znajdować się w tym katalogu po pobraniu)
+- **Skrypty pomocnicze:** `d:\agent\zadanie1\download_model.py`
+
+### Interfejs użytkownika (Web)
+- **Szablony HTML:** `d:\agent\zadanie1\templates\index.html`
+- **Adres lokalny aplikacji:** `http://localhost:5000`
+
+## 2. Uruchamianie i Dostęp
+
+Aby uruchomić aplikację:
+1. Otwórz terminal w katalogu `d:\agent\zadanie1\`
+2. Wykonaj polecenie: `python app.py`
+3. Otwórz przeglądarkę i wejdź na adres `http://localhost:5000`
+
+## 3. Debugowanie i Rozwiązywanie problemów
+
+Jeśli aplikacja nie działa poprawnie, wykonaj poniższe kroki diagnostyczne:
+
+### Logi aplikacji (Backend)
+- Sprawdź wyjście w terminalu/konsoli, w której uruchomiono `app.py`. Wyświetlane są tam błędy ładowania modelu oraz statusy zapytań HTTP.
+- Jeśli model się nie ładuje, upewnij się, że plik `.gguf` istnieje i ścieżka w `app.py` (`MODEL_FILE`) jest poprawna.
+
+### Logi przeglądarki (Frontend)
+- Otwórz Narzędzia deweloperskie w przeglądarce (F12 lub Prawy przycisk myszy -> Zbadaj).
+- Przejdź do zakładki "Console", aby zobaczyć błędy JavaScript (np. problemy z fetchowaniem pogody lub czasu).
+- Przejdź do zakładki "Network", aby sprawdzić czy zapytania do `/generate`, `/weather` lub `/time` kończą się sukcesem (kod 200).
+
+### Tryb Debugowania Flask
+- Aby uzyskać bardziej szczegółowe informacje o błędach serwera, edytuj plik `app.py`.
+- W ostatniej linii zmień `debug=False` na `debug=True`.
+- **Uwaga:** W trybie produkcyjnym lub publicznym debug powinien być wyłączony.

@@ -1,0 +1,24 @@
+Instruction Manual for Bielik LLM Local
+=======================================
+
+1. Installation:
+   - Ensure Python 3.13 is installed.
+   - Run `pip install -r requirements.txt`.
+   - Run `python download_model.py` to download the model file.
+
+2. Starting the Engine:
+   - Run `python app.py` in the terminal.
+   - Wait for "Model loaded." message.
+
+3. Accessing the User Interface:
+   - Open a web browser and go to `http://localhost:5000`.
+   - The interface allows chatting with the Bielik model.
+   - Initial load might be slow.
+
+4. Stopping the Engine:
+   - Press Ctrl+C in the terminal where `app.py` is running.
+
+5. Features:
+   - Chat interface with Bielik 11B (Quantized).
+   - Real-time System Time.
+   - Current Temperature in Katowice (auto-refresh).

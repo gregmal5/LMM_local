@@ -1,0 +1,12 @@
+Log of actions for installing and configuring Bielik LLM locally.
+
+1. Initialized results.txt.
+2. Explored 'bielik repo' and 'sources'. Found 'Bielik-11B-v3.0-Instruct-MLX-8bit' (MLX format, incompatible with Windows easily).
+3. Decided to use 'ctransformers' and GGUF model for Windows compatibility.
+4. Installed python dependencies: flask, ctransformers, huggingface-hub.
+5. Created 'download_model.py' to download 'Bielik-11B-v2.3-Instruct.Q4_K_M.gguf'.
+6. Executing download (correction of filename case was required).
+7. Created 'templates/index.html' mirroring style of 'sources/index.html', replacing LED controls with Chat Interface.
+8. Implemented 'app.py' (Flask) to serve the model and provide Weather/Time API (mocking/fetching).
+9. Created 'manual.txt' with usage instructions.
+10. Waiting for model download to complete before stating the server.
