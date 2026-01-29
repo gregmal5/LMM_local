@@ -193,7 +193,7 @@
 
 <body>
     <div id="timeDisplay">...</div>
-    <div id="versionDisplay">Bielik LLM v2.3</div>
+    <div id="versionDisplay">Loading model...</div>
     <div id="weatherDisplay">
         <img id="weatherIcon" src="" style="display:none;">
         <span id="tempVal">Weather...</span>
@@ -210,6 +210,18 @@
     </div>
 
     <script>
+        // Get Model Name
+        fetch('/model_name')
+            .then(r => r.json())
+            .then(data => {
+                if (data.model) {
+                    // Remove extension
+                    let name = data.model.replace(/\.[^/.]+$/, "");
+                    document.getElementById('versionDisplay').innerText = name;
+                }
+            })
+            .catch(e => console.error("Failed to load model name", e));
+
         // Update Time
         function updateTime() {
             fetch('/time')
