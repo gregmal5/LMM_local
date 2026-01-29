@@ -1,0 +1,13 @@
+from huggingface_hub import hf_hub_download
+import os
+
+# TinyLlama 1.1B Chat
+repo_id = "TheBloke/TinyLlama-1.1B-Chat-v1.0-GGUF"
+filename = "tinyllama-1.1b-chat-v1.0.Q4_K_M.gguf"
+
+print(f"Downloading {filename} from {repo_id}...")
+try:
+    path = hf_hub_download(repo_id=repo_id, filename=filename, local_dir="models", local_dir_use_symlinks=False)
+    print(f"Downloaded to {path}")
+except Exception as e:
+    print(f"Error downloading: {e}")

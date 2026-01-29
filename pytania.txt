@@ -1,0 +1,2 @@
+1. Czy poprawnie piszemy cherbata czy herbata
+2. Napisz pętlę w języku C, która wykona się 10 razy
