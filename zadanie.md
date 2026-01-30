@@ -32,6 +32,8 @@
     - Utwórz plik .gitignore, który będzie zawierał listę plików i katalogów, które mają być ignorowane przez system kontroli wersji - np duże pliki modeli
     - Utwórz plik .env, który będzie zawierał zmienne środowiskowe
     - Utwórz plik .env.example, który będzie zawierał przykładowe zmienne środowiskowe
+    - Każdy mój prompt commituj na githubie. na początku projektu zapytaj mnie o link do repo, zdalny branch oraz token do commitowania.
+    
 
 4. [Informacje] 
     - Utwórz plik info.md z informacjami o wersji systemu, wersji modelu, wersji strony www, wersji interfejsu użytkownika, wersji silnika modelu, wersji silnika strony www.
