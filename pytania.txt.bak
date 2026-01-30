@@ -1,0 +1,13 @@
+1. Czy poprawnie piszemy cherbata czy herbata
+2. Napisz pętlę w języku C, która wykona się 10 razy
+3. Jeśli mam 3 jabłka i zabierzesz mi 2, to ile jabłek masz ty?
+4. Napisz krótką historię o programiście, który znalazł błąd w rzeczywistości, 
+    nie używając przy tym litery 'e'.
+5. Kto wygrał mistrzostwa świata w piłce nożnej w 1926 roku i jaki był wynik finału?
+6. Napisz funkcję, która przyjmie trzy argumenty: `start`, `end` i `step`. 
+    Funkcja powinna wyświetlać liczby od `start` do `end` przy podanym kroku. 
+    Jeśli `step` jest ujemny, funkcja powinna wyświetlać liczby w odwrotnej kolejności. 
+    Jeśli `step` jest zerem, funkcja powinna wyświetlać liczby od `start` do `end` bez kroku.
+7. Wytłumacz zasadę działania czarnych dziur pięciolatkowi, 
+    używając tylko trzech zdań. Każde zdanie musi być krótsze niż 10 słów.”
+8. Napisz w Pythonie prosty dekorator, który mierzy czas wykonywania funkcji i wypisuje go w milisekundach.

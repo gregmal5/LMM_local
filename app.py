@@ -4,7 +4,6 @@ import datetime
 import requests
 import sys
 import os
-
 import glob
 
 app = Flask(__name__)
@@ -114,11 +113,23 @@ def get_weather():
         print(e)
         return jsonify({"error": "failed"})
 
+@app.route('/questions')
+def get_questions():
+    file_path = "pytania.txt"
+    if not os.path.exists(file_path):
+        return jsonify({"error": "File pytania.txt not found", "questions": []})
+    
+    try:
+        with open(file_path, "r", encoding="utf-8") as f:
+            questions = [line.strip() for line in f.readlines() if line.strip()]
+        return jsonify({"questions": questions})
+    except Exception as e:
+        return jsonify({"error": str(e), "questions": []})
+
 @app.route('/generate', methods=['POST'])
 def generate():
     global llm
     if not llm:
-        # Try loading again if it finished downloading
         load_model()
         if not llm:
             return jsonify({"response": "Model is still loading or not found. Please wait."})
@@ -127,14 +138,10 @@ def generate():
     prompt = data.get('prompt', '')
     
     # Bielik Chat Template
-    # <s>[INST] Instruction [/INST] Model answer</s>
-    # We will just append the user prompt
     full_prompt = f"[INST] {prompt} [/INST]"
     
     response_text = ""
     try:
-        # Stream response or generate at once
-        # Using simple generate for now
         response_text = llm(full_prompt, max_new_tokens=512)
         
         # LOGGING
@@ -164,7 +171,7 @@ if __name__ == '__main__':
     if selected:
         MODEL_FILE = selected
         load_model()
-        print("Starting Flask server on http://localhost:5000")
+        print(f"Starting Flask server on http://localhost:5000")
         app.run(host='0.0.0.0', port=5000, debug=True)
     else:
         print("Nie wybrano modelu lub brak plików. Serwer nie może zostać uruchomiony.")

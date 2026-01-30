@@ -4,7 +4,7 @@
 <head>
     <meta charset='utf-8'>
     <meta name='viewport' content='width=device-width, initial-scale=1'>
-    <title>Bielik LLM Interface</title>
+    <title>LLM Interface</title>
     <style>
         :root {
             --bg-color: #010a21;
@@ -200,6 +200,14 @@
     </div>
 
     <div class="container">
+        <div id="automation-controls"
+            style="margin-bottom: 20px; display: flex; gap: 10px; justify-content: center; align-items: center;">
+            <button id="btn-load-questions" onclick="startAutomation()"
+                style="background: var(--val-bluecolor);">Uruchom pytania.txt</button>
+            <button id="btn-stop-automation" onclick="stopAutomation()"
+                style="background: #ff3b30; display: none;">STOP</button>
+            <span id="automation-status" style="font-size: 0.8rem; color: var(--val-rangecolor);"></span>
+        </div>
 
         <div id="chat-history"></div>
         <div class="input-area">
@@ -210,6 +218,86 @@
     </div>
 
     <script>
+        let isAutomating = false;
+        let questionQueue = [];
+
+        async function startAutomation() {
+            if (isAutomating) return;
+
+            try {
+                const response = await fetch('/questions');
+                const data = await response.json();
+
+                if (data.error) {
+                    alert(data.error);
+                    return;
+                }
+
+                questionQueue = data.questions;
+                if (questionQueue.length === 0) {
+                    alert("Plik pytania.txt jest pusty.");
+                    return;
+                }
+
+                isAutomating = true;
+                document.getElementById('btn-load-questions').style.display = 'none';
+                document.getElementById('btn-stop-automation').style.display = 'block';
+                runNextQuestion();
+            } catch (e) {
+                console.error("Automation error", e);
+                alert("Błąd podczas ładowania pytań.");
+            }
+        }
+
+        function stopAutomation() {
+            isAutomating = false;
+            document.getElementById('btn-load-questions').style.display = 'block';
+            document.getElementById('btn-stop-automation').style.display = 'none';
+            document.getElementById('automation-status').innerText = "Zatrzymano.";
+        }
+
+        async function runNextQuestion() {
+            if (!isAutomating || questionQueue.length === 0) {
+                stopAutomation();
+                if (questionQueue.length === 0 && isAutomating) {
+                    document.getElementById('automation-status').innerText = "Zakończono wszystkie pytania.";
+                }
+                return;
+            }
+
+            const currentQuestion = questionQueue.shift();
+            document.getElementById('automation-status').innerText = `Przetwarzanie: ${questionQueue.length} pozostało...`;
+
+            // Use the existing sendMessage logic but adapted for automation
+            await processedAutomatedQuestion(currentQuestion);
+
+            // Wait a bit before next one to prevent accidental spam or UI freezes
+            setTimeout(runNextQuestion, 500);
+        }
+
+        async function processedAutomatedQuestion(promptText) {
+            addMessage(promptText, 'user');
+            const loadingId = addMessage('Thinking...', 'bot');
+
+            try {
+                const response = await fetch('/generate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ prompt: promptText })
+                });
+                const data = await response.json();
+
+                const loadingMsgEl = document.getElementById(loadingId);
+                if (loadingMsgEl) loadingMsgEl.parentElement.remove();
+
+                addMessage(data.response, 'bot');
+            } catch (e) {
+                console.error(e);
+                const loadingMsgEl = document.getElementById(loadingId);
+                if (loadingMsgEl) loadingMsgEl.innerText = "Error: " + e;
+            }
+        }
+
         // Get Model Name
         fetch('/model_name')
             .then(r => r.json())
