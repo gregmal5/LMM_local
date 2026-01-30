@@ -1,5 +1,5 @@
 from flask import Flask, render_template, request, jsonify
-from ctransformers import AutoModelForCausalLM
+from llama_cpp import Llama
 import datetime
 import requests
 import sys
@@ -14,7 +14,6 @@ llm = None
 
 def select_model():
     print("\n=== Wybór Modelu LLM ===")
-    # Look for gguf in models/ directory
     models_dir = "models"
     if not os.path.exists(models_dir):
         os.makedirs(models_dir)
@@ -48,24 +47,26 @@ def load_model():
         return
 
     if os.path.exists(MODEL_FILE):
-        # Try loading with GPU first
         try:
-            print(f"Loading Model: {MODEL_FILE} with GPU support...")
-            llm = AutoModelForCausalLM.from_pretrained(
-                MODEL_FILE, 
-                model_type="llama", 
-                context_length=2048,
-                gpu_layers=50
+            print(f"Loading Model: {MODEL_FILE}")
+            # llama-cpp-python handles GPU automatically if compiled with CUDA
+            # n_gpu_layers=50 tries to offload layers to GPU
+            llm = Llama(
+                model_path=MODEL_FILE,
+                n_ctx=2048,
+                n_gpu_layers=50,
+                verbose=False
             )
-            print("Model Loaded Successfully (GPU).")
+            print("Model Loaded Successfully.")
         except Exception as e:
-            print(f"Failed to load with GPU: {e}")
-            print("Falling back to CPU only...")
+            print(f"Failed to load model: {e}")
+            print("Trying CPU only...")
             try:
-                llm = AutoModelForCausalLM.from_pretrained(
-                    MODEL_FILE, 
-                    model_type="llama", 
-                    context_length=2048
+                llm = Llama(
+                    model_path=MODEL_FILE,
+                    n_ctx=2048,
+                    n_gpu_layers=0,
+                    verbose=False
                 )
                 print("Model Loaded Successfully (CPU).")
             except Exception as e2:
@@ -98,14 +99,13 @@ def get_weather():
         temp = current['temperature_2m']
         code = current['weather_code']
         
-        # Simple WMO to OpenWeatherMap icon mapping
-        icon_code = "01d" # clear
-        if code in [1, 2, 3]: icon_code = "02d" # clouds
-        elif code in [45, 48]: icon_code = "50d" # fog
-        elif code in [51, 53, 55, 56, 57, 61, 63, 65, 66, 67, 80, 81, 82]: icon_code = "10d" # rain
-        elif code in [71, 73, 75, 77, 85, 86]: icon_code = "13d" # snow
-        elif code in [95, 96, 99]: icon_code = "11d" # thunder
-        elif code >= 4: icon_code = "03d" # overcast/other
+        icon_code = "01d"
+        if code in [1, 2, 3]: icon_code = "02d"
+        elif code in [45, 48]: icon_code = "50d"
+        elif code in [51, 53, 55, 56, 57, 61, 63, 65, 66, 67, 80, 81, 82]: icon_code = "10d"
+        elif code in [71, 73, 75, 77, 85, 86]: icon_code = "13d"
+        elif code in [95, 96, 99]: icon_code = "11d"
+        elif code >= 4: icon_code = "03d"
 
         icon_url = f"https://openweathermap.org/img/wn/{icon_code}.png"
         return jsonify({"temp": f"{temp} C", "icon": icon_url}) 
@@ -137,12 +137,14 @@ def generate():
     data = request.json
     prompt = data.get('prompt', '')
     
-    # Bielik Chat Template
+    # Simple prompt wrap
     full_prompt = f"[INST] {prompt} [/INST]"
     
     response_text = ""
     try:
-        response_text = llm(full_prompt, max_new_tokens=512)
+        # llama-cpp-python output processing
+        output = llm(full_prompt, max_tokens=512, echo=False)
+        response_text = output['choices'][0]['text'].strip()
         
         # LOGGING
         try:
