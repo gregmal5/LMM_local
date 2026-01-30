@@ -75,14 +75,24 @@ def load_model():
         # Legacy engine
         try:
             print(f"Loading Model: {MODEL_FILE} using ctransformers (LEGACY)...")
-            # Problem: ctransformers needs model_type. We try 'llama' by default.
-            llm = AutoModelForCausalLM.from_pretrained(
-                MODEL_FILE, 
-                model_type="llama", 
-                context_length=2048,
-                gpu_layers=50
-            )
-            print("Model Loaded Successfully.")
+            try:
+                # Try GPU first
+                llm = AutoModelForCausalLM.from_pretrained(
+                    MODEL_FILE, 
+                    model_type="llama", 
+                    context_length=2048,
+                    gpu_layers=50
+                )
+                print("Model Loaded Successfully (GPU).")
+            except Exception as e_gpu:
+                print(f"Failed to load with GPU: {e_gpu}")
+                print("Falling back to CPU only...")
+                llm = AutoModelForCausalLM.from_pretrained(
+                    MODEL_FILE, 
+                    model_type="llama", 
+                    context_length=2048
+                )
+                print("Model Loaded Successfully (CPU).")
         except Exception as e:
             print(f"Failed to load with ctransformers: {e}")
             llm = None
