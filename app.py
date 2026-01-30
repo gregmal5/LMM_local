@@ -1,10 +1,17 @@
 from flask import Flask, render_template, request, jsonify
-from llama_cpp import Llama
 import datetime
 import requests
 import sys
 import os
 import glob
+
+# Try to import llama-cpp-python first
+try:
+    from llama_cpp import Llama
+    HAS_LLAMA_CPP = True
+except ImportError:
+    from ctransformers import AutoModelForCausalLM
+    HAS_LLAMA_CPP = False
 
 app = Flask(__name__)
 
@@ -46,11 +53,14 @@ def load_model():
         print("Model file not selected!")
         return
 
-    if os.path.exists(MODEL_FILE):
+    if not os.path.exists(MODEL_FILE):
+        print(f"Model file {MODEL_FILE} not found.")
+        return
+
+    if HAS_LLAMA_CPP:
+        # Modern engine
         try:
-            print(f"Loading Model: {MODEL_FILE}")
-            # llama-cpp-python handles GPU automatically if compiled with CUDA
-            # n_gpu_layers=50 tries to offload layers to GPU
+            print(f"Loading Model: {MODEL_FILE} using llama-cpp-python...")
             llm = Llama(
                 model_path=MODEL_FILE,
                 n_ctx=2048,
@@ -59,20 +69,23 @@ def load_model():
             )
             print("Model Loaded Successfully.")
         except Exception as e:
-            print(f"Failed to load model: {e}")
-            print("Trying CPU only...")
-            try:
-                llm = Llama(
-                    model_path=MODEL_FILE,
-                    n_ctx=2048,
-                    n_gpu_layers=0,
-                    verbose=False
-                )
-                print("Model Loaded Successfully (CPU).")
-            except Exception as e2:
-                print(f"Failed to load model (CPU): {e2}")
+            print(f"Failed to load with llama-cpp: {e}")
+            llm = None
     else:
-        print(f"Model file {MODEL_FILE} not found.")
+        # Legacy engine
+        try:
+            print(f"Loading Model: {MODEL_FILE} using ctransformers (LEGACY)...")
+            # Problem: ctransformers needs model_type. We try 'llama' by default.
+            llm = AutoModelForCausalLM.from_pretrained(
+                MODEL_FILE, 
+                model_type="llama", 
+                context_length=2048,
+                gpu_layers=50
+            )
+            print("Model Loaded Successfully.")
+        except Exception as e:
+            print(f"Failed to load with ctransformers: {e}")
+            llm = None
 
 @app.route('/')
 def index():
@@ -92,7 +105,6 @@ def get_time():
 @app.route('/weather')
 def get_weather():
     try:
-        # Katowice
         url = "https://api.open-meteo.com/v1/forecast?latitude=50.2584&longitude=19.0275&current=temperature_2m,weather_code"
         r = requests.get(url, timeout=2).json()
         current = r['current']
@@ -102,15 +114,11 @@ def get_weather():
         icon_code = "01d"
         if code in [1, 2, 3]: icon_code = "02d"
         elif code in [45, 48]: icon_code = "50d"
-        elif code in [51, 53, 55, 56, 57, 61, 63, 65, 66, 67, 80, 81, 82]: icon_code = "10d"
-        elif code in [71, 73, 75, 77, 85, 86]: icon_code = "13d"
-        elif code in [95, 96, 99]: icon_code = "11d"
         elif code >= 4: icon_code = "03d"
 
         icon_url = f"https://openweathermap.org/img/wn/{icon_code}.png"
         return jsonify({"temp": f"{temp} C", "icon": icon_url}) 
     except Exception as e:
-        print(e)
         return jsonify({"error": "failed"})
 
 @app.route('/questions')
@@ -118,7 +126,6 @@ def get_questions():
     file_path = "pytania.txt"
     if not os.path.exists(file_path):
         return jsonify({"error": "File pytania.txt not found", "questions": []})
-    
     try:
         with open(file_path, "r", encoding="utf-8") as f:
             questions = [line.strip() for line in f.readlines() if line.strip()]
@@ -132,36 +139,30 @@ def generate():
     if not llm:
         load_model()
         if not llm:
-            return jsonify({"response": "Model is still loading or not found. Please wait."})
+            return jsonify({"response": "Błąd ładowania modelu. Sprawdź konsole seryjną."})
             
     data = request.json
     prompt = data.get('prompt', '')
     
-    # Simple prompt wrap
     full_prompt = f"[INST] {prompt} [/INST]"
     
     response_text = ""
     try:
-        # llama-cpp-python output processing
-        output = llm(full_prompt, max_tokens=512, echo=False)
-        response_text = output['choices'][0]['text'].strip()
+        if HAS_LLAMA_CPP:
+            output = llm(full_prompt, max_tokens=512, echo=False)
+            response_text = output['choices'][0]['text'].strip()
+        else:
+            response_text = llm(full_prompt, max_new_tokens=512)
         
         # LOGGING
         try:
             log_dir = "log"
-            if not os.path.exists(log_dir):
-                os.makedirs(log_dir)
-            
+            if not os.path.exists(log_dir): os.makedirs(log_dir)
             log_file = os.path.join(log_dir, f"{os.path.basename(MODEL_FILE)}.log")
             timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            
             with open(log_file, "a", encoding="utf-8") as f:
-                f.write(f"[{timestamp}] User: {prompt}\n")
-                f.write(f"[{timestamp}] LLM: {response_text}\n")
-                f.write("-" * 40 + "\n")
-                
-        except Exception as log_err:
-            print(f"Logging error: {log_err}")
+                f.write(f"[{timestamp}] User: {prompt}\n[{timestamp}] LLM: {response_text}\n" + "-"*40 + "\n")
+        except: pass
 
     except Exception as e:
         response_text = f"Error generating: {str(e)}"
@@ -176,5 +177,4 @@ if __name__ == '__main__':
         print(f"Starting Flask server on http://localhost:5000")
         app.run(host='0.0.0.0', port=5000, debug=True)
     else:
-        print("Nie wybrano modelu lub brak plików. Serwer nie może zostać uruchomiony.")
         sys.exit(1)
